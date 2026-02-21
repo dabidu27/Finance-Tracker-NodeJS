@@ -33,3 +33,28 @@ export const addTransaction = async (req, res) => {
         res.status(400).json({ 'message': 'Failed to add transaction' });
     }
 }
+
+
+export const editTransaction = async (req, res) => {
+
+    try {
+
+        const { description, amount, category } = req.body;
+        const userId = req.user.id;
+        const transactionId = Number(req.params.id);
+
+        const query = 'update transactions set description = $1, amount = $2, category = $3 where user_id = $4 and id = $5 returning *';
+        const values = [description, amount, category, userId, transactionId];
+
+        const result = await pool.query(query, values);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: 'Transaction not found or unauthorized' });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ message: 'Failed to edit transaction' });
+    }
+}
