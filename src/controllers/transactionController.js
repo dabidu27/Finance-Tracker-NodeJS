@@ -58,3 +58,24 @@ export const editTransaction = async (req, res) => {
         res.status(400).json({ message: 'Failed to edit transaction' });
     }
 }
+
+export const deleteTransaction = async (req, res) => {
+
+    try {
+
+        const transactionId = Number(req.params.id);
+        const userId = req.user.id;
+
+        const query = 'delete from transactions where user_id = $1 and id = $2 returning *';
+        const result = await pool.query(query, [userId, transactionId]);
+
+        if (result.rows.length === 0) {
+            res.status(404).json({ message: 'Transaction not found' });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+
+        console.error(error);
+        res.status(400).json({ message: 'Failed to delete transaction' });
+    }
+}
