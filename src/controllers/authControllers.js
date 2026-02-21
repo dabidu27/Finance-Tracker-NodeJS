@@ -10,7 +10,7 @@ const loginSchema = Joi.object({
 
 const registerSchema = Joi.object({
     username: Joi.string().required(),
-    email: Joi.string().required(),
+    email: Joi.string().email().required(),
     password: Joi.string().required()
 });
 
@@ -55,7 +55,6 @@ export const registerUser = async (req, res) => {
         if (error) {
             return res.status(400).json({ message: error.details[0].message });
         }
-
         const { username, email, password } = userData;
         const hashedPassword = await hashPassword(password);
         const query = 'insert into users (username, email, password_hash) values ($1, $2, $3) returning id, username, email';
