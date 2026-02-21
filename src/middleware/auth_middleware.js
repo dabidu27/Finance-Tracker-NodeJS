@@ -8,6 +8,15 @@ export const getCurrentUser = async (req, res, next) => {
 
     const authHeader = req.headers.authorization; //extract authorization header from request - it contains the phrase Bearer TOKEN, where Token is the JWT which we have to validate
     if (!authHeader || !authHeader.startsWith('Bearer ')) { //if the request does not have authorization header or it has a wrong format (no Bearer word)
+        //the authorization header is created (passed) manually in the requests send from the frontend
+        //EX: const response = await fetch('http://localhost:5000/api/transactions', {
+        //     method: 'GET',
+        //     headers: {
+        //         'Content-Type': 'application/json',
+        //          this is how the frontend passes the token:
+        //         'Authorization': `Bearer ${token}` 
+        //     }
+        // });
 
         //the validation fails
         return res.status(401).json({ message: "Could not validate credentials", headers: { 'WWW-Authenticate': 'Bearer' } });
@@ -32,6 +41,9 @@ export const getCurrentUser = async (req, res, next) => {
         req.user = { id: result.rows[0].id, username: result.rows[0].username };
 
         //call next() so request moves to the controller
+        //it works like the Depends in FastAPI; before calling a function for an API endpoint, we get the currentUser so we can verify ownership
+        //ex: a user can only get his own transactions, so we have to get his userId (or username)
+        //extracting userId is done by decoding the JWT token, because the JWT token is obtained from userId + ACCESS_SECRET_KEY
         next();
 
     } catch (error) {
