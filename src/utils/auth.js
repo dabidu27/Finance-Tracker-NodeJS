@@ -9,10 +9,10 @@ const ACCESS_EXPIRY_TIME = '1d';
 export const hashPassword = async (password) => {
 
     const saltRounds = 10; //standard security level for bcrypt
-    return await bcrypt(password, saltRounds);
+    return await bcrypt.hash(password, saltRounds);
 }
 
-export const verifyPassword = async (hashedPassword) => {
+export const verifyPassword = async (password, hashedPassword) => {
 
     return await bcrypt.compare(password, hashedPassword);
 }
