@@ -4,17 +4,19 @@ import axios from 'axios';
 import * as SecureStorage from 'expo-secure-store';
 
 //with type TransactionRecord, we define a type so react knows what kind of elements to expect in the transaction array
-type TransactionRecord = { id: string, description: string, amount: string, category: string };
+type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean };
 //with TransactionProps, we define a type used in the mini component we will define
-type TransactionProps = { description: string, amount: string, category: string };
+type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean };
 
 //this is a custom mini component we define
 //every transaction will look like  this after we map with renderItem in the flatList
-const Transaction = ({ description, amount, category }: TransactionProps) => (
+const Transaction = ({ description, amount, category, is_expense }: TransactionProps) => (
     <View style={styles.card}>
+        {/*We use 2 views to have description and amount on the left on the card, one below the other
+        and the category on the right side of the card */}
         <View style={styles.leftColumn}>
             <Text style={styles.descriptionText}>{description}</Text>
-            <Text style={styles.amountText}>{amount}</Text>
+            <Text style={[styles.amountText, { color: is_expense ? '#ff0000' : '#2ecc71' }]}>{amount}</Text>
         </View>
         <Text style={styles.categoryText}>{category}</Text>
 
@@ -69,7 +71,7 @@ export default function DashboardScreen() {
                 data={transactions}
                 //notice that the function after => is with () (not {}) and has no return
                 //this means instantly run what is inside
-                renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} />)}
+                renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} />)}
                 keyExtractor={item => item.id}
             />
         </SafeAreaView>
