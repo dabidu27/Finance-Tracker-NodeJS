@@ -118,6 +118,6 @@ const styles = StyleSheet.create({
     amountText: {
         fontSize: 18,
         fontWeight: 'bold',
-        color: '#ff0000', // A nice finance blue
+        color: '#ff0000'
     }
 })

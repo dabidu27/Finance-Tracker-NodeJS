@@ -33,7 +33,7 @@ export default function AuthScreen() {
                 //after a user logs in, we need to saave their JWT on the safe storage vault on the phone
                 const token = response.data.access_token;
                 await SecureStore.setItemAsync('token', token);
-                router.replace('./dashboard'); //router.replace destroys the login screen and moves to the screen coded in dashboard.tsx (so the user can't swipe back by mistake to the login page)
+                router.replace('./homescreen'); //router.replace destroys the login screen and moves to the screen coded in dashboard.tsx (so the user can't swipe back by mistake to the login page)
                 //router.push just navigates to the next screen (no destroying)
             } else {
                 const response = await axios.post(`${baseUrl}/register`, { username, email, password });
