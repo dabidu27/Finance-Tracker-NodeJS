@@ -3,6 +3,7 @@ import { useState } from 'react';
 import axios from 'axios';
 import * as SecureStore from 'expo-secure-store'; //expo secure store is a tool that offers a safe storage vault on the phone
 //we will use this to save the JWT after a user logs in, in order for future requests to be authorized
+import { router } from 'expo-router'; //used to navigate between screens
 
 export default function AuthScreen() {
 
@@ -31,7 +32,9 @@ export default function AuthScreen() {
 
                 //after a user logs in, we need to saave their JWT on the safe storage vault on the phone
                 const token = response.data.access_token;
-                SecureStore.setItemAsync('token', token);
+                await SecureStore.setItemAsync('token', token);
+                router.replace('./dashboard'); //router.replace destroys the login screen and moves to the screen coded in dashboard.tsx (so the user can't swipe back by mistake to the login page)
+                //router.push just navigates to the next screen (no destroying)
             } else {
                 const response = await axios.post(`${baseUrl}/register`, { username, email, password });
                 console.log('Register successful');
@@ -105,7 +108,7 @@ const styles = StyleSheet.create({
     container: {
         flex: 1,
         backgroundColor: '#f4f4f9',
-        justifyContent: 'center',
+        justifyContent: 'center', //justifyContent defines how child elements of a container are aligned along the main axis of a container
     },
     formContainer: {
         paddingHorizontal: 30,
