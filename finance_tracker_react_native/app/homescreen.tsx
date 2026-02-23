@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, FlatList, TouchableWithoutFeedback, Keyboard, TouchableOpacity } from "react-native";
+import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, FlatList, TouchableWithoutFeedback, Keyboard, TouchableOpacity, Modal } from "react-native";
 import * as SecureStorage from 'expo-secure-store';
 import axios from 'axios';
 
@@ -20,6 +20,10 @@ export default function HomeScreen() {
 
     const [balance, setBalance] = useState('');
     const [transactions, setTransactions] = useState<TransactionRecord[]>([]);
+    const [modalVisible, setModalVisible] = useState(false);
+    const [description, setDescription] = useState('')
+    const [amount, setAmount] = useState('')
+    const [category, setCategory] = useState('')
 
     const fetchTransactions = async () => {
 
@@ -47,6 +51,47 @@ export default function HomeScreen() {
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaView style={styles.container}>
+
+                <Modal
+                    animationType="slide"
+                    transparent={true}
+                    visible={modalVisible}
+                    onRequestClose={() => {
+                        setModalVisible(!modalVisible);
+                    }}
+                >
+                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                        <View style={styles.modalContainer}>
+                            <View style={styles.modalView}>
+                                <Text style={styles.label}>Add description</Text>
+                                <TextInput
+                                    style={styles.input}
+                                    value={description}
+                                    onChangeText={setDescription}
+                                />
+
+                                <Text style={styles.label}>Add amount</Text>
+                                <TextInput
+                                    value={amount}
+                                    onChangeText={setAmount}
+                                    keyboardType="numeric"
+                                    style={styles.input}
+                                />
+                                <Text style={styles.label}>Add category</Text>
+                                <TextInput
+                                    value={category}
+                                    onChangeText={setCategory}
+                                    style={styles.input}
+                                />
+
+                                <TouchableOpacity style={styles.addTransactionButton} onPress={() => { setModalVisible(false) }}>
+                                    <Text style={styles.addTransactionText}>Add transaction</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+                    </TouchableWithoutFeedback>
+                </Modal>
+
                 <View>
 
                     <View style={styles.balanceContainer}>
@@ -61,11 +106,11 @@ export default function HomeScreen() {
                     </View>
 
                     <View style={styles.actionButtonsContainer}>
-                        <TouchableOpacity style={styles.addIncomeButton}>
+                        <TouchableOpacity style={styles.addIncomeButton} onPress={() => { setModalVisible(true) }}>
                             <Text style={styles.addIncomeText}>Add income</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.addExpenseButton}>
+                        <TouchableOpacity style={styles.addExpenseButton} onPress={() => { setModalVisible(true) }}>
                             <Text style={styles.addExpenseText}>Add expense</Text>
                         </TouchableOpacity>
                     </View>
@@ -166,6 +211,48 @@ const styles = StyleSheet.create({
     },
 
     addExpenseText: {
+        color: 'white',
+        fontWeight: 'bold'
+    },
+
+    modalContainer: {
+        flex: 1,
+        justifyContent: 'center',
+        alignItems: 'center',
+        backgroundColor: 'rgba(0,0,0,0.5)' //dims the background
+    },
+
+    modalView: {
+        margin: 20,
+        borderRadius: 20,
+        backgroundColor: 'white',
+        padding: 35,
+        height: '50%'
+    },
+
+    input: {
+        height: 40,
+        borderColor: '#ddd',
+        borderWidth: 1,
+        borderRadius: 8,
+        marginBottom: 20,
+        paddingHorizontal: 10,
+    },
+
+    addTransactionButton: {
+        borderRadius: 20,
+        padding: 10,
+        backgroundColor: 'blue',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 5,
+
+    },
+
+    addTransactionText: {
+
         color: 'white',
         fontWeight: 'bold'
     },
