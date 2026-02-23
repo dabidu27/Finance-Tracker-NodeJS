@@ -4,7 +4,7 @@ export const getTransactions = async (req, res) => {
 
     try {
         const userId = req.user.id; //getCurrentUser middleware attaches userId to the request
-        const query = 'SELECT * from transactions where user_id = $1 order by transaction_date desc'; //add ownership later, after adding JWT auth
+        const query = 'SELECT * from transactions where user_id = $1 order by id desc'; //add ownership later, after adding JWT auth
         const result = await pool.query(query, [userId]);
         res.status(200).json(result.rows);
     } catch (error) {

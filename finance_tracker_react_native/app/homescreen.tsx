@@ -24,6 +24,7 @@ export default function HomeScreen() {
     const [description, setDescription] = useState('')
     const [amount, setAmount] = useState('')
     const [category, setCategory] = useState('')
+    const [isExpense, setIsExpense] = useState(true);
 
     const fetchTransactions = async () => {
 
@@ -38,6 +39,34 @@ export default function HomeScreen() {
 
             console.log('Successfully fetched transactions');
             setTransactions(response.data.slice(0, 3)); //get only the first 3 transactions (last 3 transactions by date)
+        } catch (error) {
+            console.error(error);
+        }
+
+    }
+
+    const handleSave = async () => {
+
+        try {
+            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+            const token = await SecureStorage.getItemAsync('token');
+            const newTransaction = { description, amount: amount, category, is_expense: isExpense };
+
+            const response = await axios.post(baseUrl, newTransaction, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            if (response.status === 201) {
+
+                console.log('Transaction added successfully');
+                //set inputs back to default
+                setDescription('');
+                setAmount('');
+                setCategory('')
+                setModalVisible(false)
+                //refresh the list
+                fetchTransactions();
+            }
         } catch (error) {
             console.error(error);
         }
@@ -84,7 +113,7 @@ export default function HomeScreen() {
                                     style={styles.input}
                                 />
 
-                                <TouchableOpacity style={styles.addTransactionButton} onPress={() => { setModalVisible(false) }}>
+                                <TouchableOpacity style={styles.addTransactionButton} onPress={() => { handleSave() }}>
                                     <Text style={styles.addTransactionText}>Add transaction</Text>
                                 </TouchableOpacity>
                             </View>
@@ -106,11 +135,17 @@ export default function HomeScreen() {
                     </View>
 
                     <View style={styles.actionButtonsContainer}>
-                        <TouchableOpacity style={styles.addIncomeButton} onPress={() => { setModalVisible(true) }}>
+                        <TouchableOpacity style={styles.addIncomeButton} onPress={() => {
+                            setModalVisible(true)
+                            setIsExpense(false)
+                        }}>
                             <Text style={styles.addIncomeText}>Add income</Text>
                         </TouchableOpacity>
 
-                        <TouchableOpacity style={styles.addExpenseButton} onPress={() => { setModalVisible(true) }}>
+                        <TouchableOpacity style={styles.addExpenseButton} onPress={() => {
+                            setModalVisible(true)
+                            setIsExpense(true)
+                        }}>
                             <Text style={styles.addExpenseText}>Add expense</Text>
                         </TouchableOpacity>
                     </View>
