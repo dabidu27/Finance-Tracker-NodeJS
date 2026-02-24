@@ -79,3 +79,25 @@ export const deleteTransaction = async (req, res) => {
         res.status(400).json({ message: 'Failed to delete transaction' });
     }
 }
+
+
+export const modifyBalance = async (req, res) => {
+
+    try {
+
+        const { balance } = req.body;
+        const userId = req.user.id;
+
+        const query = "update users set balance = $1 where id = $2 returning *";
+        const result = await pool.query(query, [balance, userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ message: "Failed to modify balance" });
+        }
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+        console.error(error);
+        res.status(400).json({ message: "Failed to modify balance" });
+    }
+
+}
