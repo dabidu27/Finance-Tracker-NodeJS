@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, FlatList, TouchableWithoutFeedback, Keyboard, TouchableOpacity, Modal } from "react-native";
+import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, FlatList, TouchableWithoutFeedback, Keyboard, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from "react-native";
 import * as SecureStorage from 'expo-secure-store';
 import axios from 'axios';
 
@@ -45,6 +45,44 @@ export default function HomeScreen() {
 
     }
 
+    const fetchBalance = async () => {
+
+        try {
+            const baseUrl = "http://192.168.1.105:8080/api/transactions";
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.get(`${baseUrl}/balance`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            console.log("Successfully fetched balance");
+            const balance = response.data.balance;
+            setBalance(balance);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const updateBalance = async (calculatedBalance?: string | number) => { //calculatedBalance?: string | number means the parameter is optional and can be a number or a string
+
+        try {
+
+            const valueToSend = calculatedBalance !== undefined ? calculatedBalance : balance; //if the parameter is not undefined, use the parameter (for updating balance after a transaction), else use the balance from setBalance (for updating balance after user enters it)
+            if (valueToSend === '' || valueToSend === undefined) return;
+            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.post(`${baseUrl}/balance`, { balance: Number(valueToSend) }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            console.log("Successfully updated balance");
+            setBalance(response.data.balance);
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
     const handleSave = async () => {
 
         try {
@@ -66,6 +104,9 @@ export default function HomeScreen() {
                 setModalVisible(false)
                 //refresh the list
                 fetchTransactions();
+                const newBalance = isExpense ? Number(balance) - Number(amount) : Number(balance) + Number(amount)
+                setBalance(String(newBalance)); //because setBalance is async (all state updates are async) react will update it on the next render
+                updateBalance(newBalance); //this means that if we don't pass the updated balance to use, updateBalance will be called before balance is updated (before setBalance runs)
             }
         } catch (error) {
             console.error(error);
@@ -74,6 +115,7 @@ export default function HomeScreen() {
     }
 
     useEffect(() => {
+        fetchBalance();
         fetchTransactions();
     }, [])
 
@@ -89,34 +131,43 @@ export default function HomeScreen() {
                         setModalVisible(!modalVisible);
                     }}
                 >
-                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                    {/*Tapping this TouchableWithoutFeedback closes the Modal */}
+                    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
                         <View style={styles.modalContainer}>
-                            <View style={styles.modalView}>
-                                <Text style={styles.label}>Add description</Text>
-                                <TextInput
-                                    style={styles.input}
-                                    value={description}
-                                    onChangeText={setDescription}
-                                />
+                            <KeyboardAvoidingView
+                                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                                style={{ width: '100%' }}
+                            >
+                                {/*Tapping this TouchableWithoutFeedback closes the keyboard */}
+                                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                    <View style={styles.modalView}>
+                                        <Text style={styles.label}>Add description</Text>
+                                        <TextInput
+                                            style={styles.input}
+                                            value={description}
+                                            onChangeText={setDescription}
+                                        />
 
-                                <Text style={styles.label}>Add amount</Text>
-                                <TextInput
-                                    value={amount}
-                                    onChangeText={setAmount}
-                                    keyboardType="numeric"
-                                    style={styles.input}
-                                />
-                                <Text style={styles.label}>Add category</Text>
-                                <TextInput
-                                    value={category}
-                                    onChangeText={setCategory}
-                                    style={styles.input}
-                                />
+                                        <Text style={styles.label}>Add amount</Text>
+                                        <TextInput
+                                            value={amount}
+                                            onChangeText={setAmount}
+                                            keyboardType="numeric"
+                                            style={styles.input}
+                                        />
+                                        <Text style={styles.label}>Add category</Text>
+                                        <TextInput
+                                            value={category}
+                                            onChangeText={setCategory}
+                                            style={styles.input}
+                                        />
 
-                                <TouchableOpacity style={styles.addTransactionButton} onPress={() => { handleSave() }}>
-                                    <Text style={styles.addTransactionText}>Add transaction</Text>
-                                </TouchableOpacity>
-                            </View>
+                                        <TouchableOpacity style={styles.addTransactionButton} onPress={() => { handleSave() }}>
+                                            <Text style={styles.addTransactionText}>Add transaction</Text>
+                                        </TouchableOpacity>
+                                    </View>
+                                </TouchableWithoutFeedback>
+                            </KeyboardAvoidingView>
                         </View>
                     </TouchableWithoutFeedback>
                 </Modal>
@@ -131,6 +182,8 @@ export default function HomeScreen() {
                             onChangeText={setBalance}
                             placeholder="Balance"
                             keyboardType='numeric'
+                            onBlur={() => updateBalance()} //trigers when the user taps outside the input
+                            onSubmitEditing={() => updateBalance()} //trrigers when the users hits "done" on the keyboard
                         />
                     </View>
 
@@ -252,17 +305,25 @@ const styles = StyleSheet.create({
 
     modalContainer: {
         flex: 1,
-        justifyContent: 'center',
+        justifyContent: 'flex-end',
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)' //dims the background
     },
 
     modalView: {
-        margin: 20,
-        borderRadius: 20,
+        width: '100%',
+        borderTopLeftRadius: 30,
+        borderTopRightRadius: 30,
         backgroundColor: 'white',
-        padding: 35,
-        height: '50%'
+        paddingHorizontal: 30,
+        paddingTop: 35,
+        paddingBottom: 40,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: -3 },
+        shadowOpacity: 0.15,
+        shadowRadius: 10,
+        elevation: 10,
+
     },
 
     input: {
@@ -283,6 +344,7 @@ const styles = StyleSheet.create({
         shadowOpacity: 0.1,
         shadowRadius: 6,
         elevation: 5,
+        alignItems: 'center'
 
     },
 
