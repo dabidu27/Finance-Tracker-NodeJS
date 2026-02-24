@@ -99,5 +99,23 @@ export const modifyBalance = async (req, res) => {
         console.error(error);
         res.status(400).json({ message: "Failed to modify balance" });
     }
+}
 
+export const getBalance = async (req, res) => {
+    try {
+
+        const userId = req.user.id;
+        const query = "select balance from users where id = $1";
+        const result = await pool.query(query, [userId]);
+
+        if (result.rows.length === 0) {
+            return res.status(404).json({ message: "User not found" });
+        }
+
+        res.status(200).json(result.rows[0]);
+    } catch (error) {
+
+        console.error(error);
+        res.status(400).json({ message: "Failed to fetch balance" });
+    }
 }

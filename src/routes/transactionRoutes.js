@@ -1,6 +1,6 @@
 import express from 'express';
 
-import { getTransactions, addTransaction, editTransaction, deleteTransaction, modifyBalance } from '../controllers/transactionController.js';
+import { getTransactions, addTransaction, editTransaction, deleteTransaction, modifyBalance, getBalance } from '../controllers/transactionController.js';
 import { getCurrentUser } from '../middleware/auth_middleware.js';
 
 const router = express.Router();
@@ -9,5 +9,6 @@ router.post('/', getCurrentUser, addTransaction); //when the base url is hit wit
 router.put('/:id', getCurrentUser, editTransaction);
 router.delete('/:id', getCurrentUser, deleteTransaction);
 router.post('/balance', getCurrentUser, modifyBalance);
+router.get('/balance', getCurrentUser, getBalance);
 
 export default router; //this is not a named export
