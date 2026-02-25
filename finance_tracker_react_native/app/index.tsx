@@ -85,6 +85,10 @@ export default function AuthScreen() {
                         secureTextEntry={true}
                     />
 
+                    <TouchableOpacity style={styles.toggleContainer}>
+                        <Text style={styles.toggleText}>Forgot password?</Text>
+                    </TouchableOpacity>
+
                     {/*TouchableOpacity represents something we can touch, we use it for a button (but the actual button is drawn using styles)
           Notice the onPress argument. When the button is pressed handleSubmit function is called */}
                     <TouchableOpacity style={styles.button} onPress={handleSubmit}>
