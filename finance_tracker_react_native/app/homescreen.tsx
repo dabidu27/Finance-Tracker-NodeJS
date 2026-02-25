@@ -305,7 +305,7 @@ const styles = StyleSheet.create({
 
     modalContainer: {
         flex: 1,
-        justifyContent: 'flex-end', //the modal now stucks to the bottom
+        justifyContent: 'flex-end', //the modal now stucks to the bottom of the screen
         alignItems: 'center',
         backgroundColor: 'rgba(0,0,0,0.5)' //dims the background
     },
