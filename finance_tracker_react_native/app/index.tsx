@@ -85,7 +85,7 @@ export default function AuthScreen() {
                         secureTextEntry={true}
                     />
 
-                    <TouchableOpacity style={styles.toggleContainer}>
+                    <TouchableOpacity style={styles.toggleContainer} onPress={() => router.push('./forgotpassword')}>
                         <Text style={styles.toggleText}>Forgot password?</Text>
                     </TouchableOpacity>
 
