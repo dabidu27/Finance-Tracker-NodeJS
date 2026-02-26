@@ -18,6 +18,8 @@ export default function RootLayout() {
         <Stack.Screen name="index" options={{ headerShown: false }} />
         <Stack.Screen name="dashboard" options={{ headerShown: false }} />
         <Stack.Screen name="homescreen" options={{ headerShown: false }} />
+        <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
+        <Stack.Screen name="resetpassword" options={{ headerShown: false }} />
       </Stack>
       <StatusBar style="auto" />
     </ThemeProvider>
