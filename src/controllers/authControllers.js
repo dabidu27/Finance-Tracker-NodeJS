@@ -132,3 +132,42 @@ export const sendForgetPasswordCode = async (req, res) => {
         res.status(500).json({ message: "Server error. Please try again later." });
     }
 }
+
+export const setNewPassword = async (req, res) => {
+
+    try {
+
+        const { email, code, newPassword } = req.body;
+
+        let query = 'select reset_code, reset_code_exp from users where email = $1';
+        const ResetCodeResult = await pool.query(query, [email]);
+        if (ResetCodeResult.rows.length === 0) {
+            return res.status(404).json({ message: 'Email not found' });
+        }
+
+        if (code !== ResetCodeResult.rows[0].reset_code) {
+            return res.status(400).json({ message: 'Invalid code' });
+        }
+
+        const expiryTime = ResetCodeResult.rows[0].reset_code_exp;
+        const now = new Date();
+        const expired = expiryTime < now ? true : false;
+        if (expired === true) {
+            return res.status(400).json({ message: 'Reset password code is expired' });
+        }
+
+        const newPasswordHash = await hashPassword(newPassword);
+        query = 'update users set password_hash = $1, reset_code = NULL, reset_code_exp = NULL where email = $2 returning *';
+        const result = await pool.query(query, [newPasswordHash, email]);
+
+        if (result.rows.length === 0) {
+            return res.status(400).json({ message: 'Failed to update password' });
+        }
+
+        res.status(200).json({ message: 'Password updated' });
+    } catch (error) {
+
+        console.error("Reset password error:", error);
+        res.status(500).json({ message: "Internal server error" });
+    }
+}
