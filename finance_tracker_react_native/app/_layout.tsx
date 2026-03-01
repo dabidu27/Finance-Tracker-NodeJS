@@ -15,9 +15,11 @@ export default function RootLayout() {
   return (
     <ThemeProvider value={colorScheme === 'dark' ? DarkTheme : DefaultTheme}>
       <Stack>
+
+        {/* hide the header for the entier tab section */}
+        <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
+        {/* hide the header for the other files*/}
         <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="dashboard" options={{ headerShown: false }} />
-        <Stack.Screen name="homescreen" options={{ headerShown: false }} />
         <Stack.Screen name="forgotpassword" options={{ headerShown: false }} />
         <Stack.Screen name="resetpassword" options={{ headerShown: false }} />
       </Stack>
