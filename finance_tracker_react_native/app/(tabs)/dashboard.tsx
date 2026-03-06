@@ -1,4 +1,4 @@
-import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
+import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity, Alert } from "react-native";
 import { useCallback, useEffect, useState } from "react";
 import axios from 'axios';
 import * as SecureStorage from 'expo-secure-store';
@@ -157,6 +157,53 @@ export default function DashboardScreen() {
 
     }
 
+    //the actual implementation of deletion inside the alert, at onPress will be async
+    const handleDeleteAll = () => {
+
+        //we add an alert so the user is sure he wants to delete all transactions
+        Alert.alert(
+            "Delete all transactions", //title
+            "Are you absolutely sure? This will wipe your entire history and reset your balance to zero. This cannot be undone.", //message
+            [ //buttons
+                {
+                    //cancel button
+                    text: 'Cancel',
+                    style: 'cancel'
+                },
+
+                {   //delete button
+                    text: 'Delete everything',
+                    style: 'destructive',
+                    onPress: async () => {
+
+                        try {
+
+                            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+                            const token = await SecureStorage.getItemAsync('token');
+
+                            const response = await axios.delete(`${baseUrl}`, {
+                                headers: {
+                                    'Authorization': `Bearer ${token}`
+                                }
+                            });
+
+                            //we call fetchTransactions(), as it does setTransactions(newest transaction data from db) inside it
+                            //so the screen is redrawn
+                            await fetchTransactions();
+
+                            //for this API endpoint, the balance is updated by the backend, as we just need to set it to 0
+
+                        } catch (error: any) {
+                            console.log('Failed to delete transactions: ', error.response?.data || error.message);
+                        }
+
+                    }
+                }
+            ]
+        );
+
+    };
+
     //useEffect is used for running background tasks
     //imediatelly after the screen is drawn, use effect runs and fetchTransactions() is called
     //after the data arrives, the screen is redrawn
@@ -181,6 +228,11 @@ export default function DashboardScreen() {
             renderItem tells what to do to each element of the array
             we map item to a custom componenet we defined above; each element in the array is transformed into that custom component
             keyExtractor stores the unique id of each transaction*/}
+                <View style={styles.clearAllTransactionsContainer}>
+                    <TouchableOpacity style={styles.clearAllTransactionsButton} onPress={handleDeleteAll}>
+                        <Text style={styles.clearAllTransactionsText}>Clear all transactions</Text>
+                    </TouchableOpacity>
+                </View>
 
                 <FlatList
 
@@ -248,5 +300,32 @@ const styles = StyleSheet.create({
         height: '100%',
         borderRadius: 12,
         marginLeft: 10
+    },
+
+    clearAllTransactionsContainer: {
+        justifyContent: 'center',
+        padding: 10,
+        //pushes the button to the right side of the screen of the screen
+        alignItems: 'flex-end'
+    },
+
+    clearAllTransactionsButton: {
+        borderRadius: 20,
+        backgroundColor: '#e74c3c',
+        //some padding relative to the text inside
+        paddingHorizontal: 20,
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.1,
+        shadowRadius: 6,
+        elevation: 5,
+        alignItems: 'center',
+        justifyContent: 'center',
+        height: 40
+    },
+
+    clearAllTransactionsText: {
+        color: 'white',
+        fontWeight: 'bold',
     }
 })
