@@ -3,23 +3,27 @@ import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, Flat
 import * as SecureStorage from 'expo-secure-store';
 import axios from 'axios';
 import { useFocusEffect } from "expo-router";
+import { Ionicons } from "@expo/vector-icons";
+import { GestureHandlerRootView, Swipeable } from "react-native-gesture-handler";
 
 
 type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean, created_at: string };
-type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean, created_at: string };
-const Transaction = ({ description, amount, category, is_expense, created_at }: TransactionProps) => (
+type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean, created_at: string, onEdit: () => void, onDelete: () => void };
+const Transaction = ({ description, amount, category, is_expense, created_at, onEdit, onDelete }: TransactionProps) => (
 
-    <View style={styles.card}>
-        <View style={styles.column}>
-            <Text style={styles.descriptionText}>{description}</Text>
-            <Text style={[styles.amountText, { color: is_expense ? '#ff0000' : '#2ecc71' }]}>{amount}</Text>
-        </View>
-        <View style={styles.column}>
-            <Text style={styles.categoryText}>{category}</Text>
-            <Text style={styles.categoryText}>{created_at}</Text>
-        </View>
+    <Swipeable renderRightActions={() => renderRightActions(onEdit, onDelete)}>
+        <View style={styles.card}>
+            <View style={styles.column}>
+                <Text style={styles.descriptionText}>{description}</Text>
+                <Text style={[styles.amountText, { color: is_expense ? '#ff0000' : '#2ecc71' }]}>{amount}</Text>
+            </View>
+            <View style={styles.column}>
+                <Text style={styles.categoryText}>{category}</Text>
+                <Text style={styles.categoryText}>{created_at}</Text>
+            </View>
 
-    </View>
+        </View >
+    </Swipeable>
 )
 
 const formatString = (dateString: string) => {
@@ -30,6 +34,24 @@ const formatString = (dateString: string) => {
 
     const date = new Date(dateString);
     return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
+
+
+const renderRightActions = (onEdit: () => void, onDelete: () => void) => {
+
+    return (
+
+        <View style={{ flexDirection: 'row', alignItems: 'center', marginBottom: 10 }}>
+            <TouchableOpacity onPress={onEdit} style={[styles.swipeButton, { backgroundColor: '#3498db' }]}>
+                <Ionicons name='pencil' size={24} color='white' />
+            </TouchableOpacity>
+
+            <TouchableOpacity onPress={onDelete} style={[styles.swipeButton, { backgroundColor: '#e74c3c' }]}>
+                <Ionicons name='trash' size={24} color='white' />
+            </TouchableOpacity>
+        </View>
+    )
+
 }
 export default function HomeScreen() {
 
@@ -129,6 +151,31 @@ export default function HomeScreen() {
 
     }
 
+
+    const handleDelete = async (id: string, is_expense: boolean, amount: string) => {
+
+        try {
+            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.delete(`${baseUrl}/${id}`, {
+                headers:
+                    { 'Authorization': `Bearer ${token}` }
+            });
+            console.log('Successfully deleted transaction');
+
+            //update the screen with the up to date transactions (without the deleted one)
+            await fetchTransactions();
+            const newBalance = is_expense == true ? Number(balance) + Number(amount) : Number(balance) - Number(amount);
+            await updateBalance(newBalance);
+        } catch (error: any) {
+            console.log('Failed to delete transaction: ', error.response?.data || error.message);
+        }
+
+
+
+    }
+
     // useEffect(() => {
     //     fetchBalance();
     //     fetchTransactions();
@@ -145,97 +192,103 @@ export default function HomeScreen() {
         }, [])
     )
     return (
+
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-            <SafeAreaView style={styles.container}>
+            <GestureHandlerRootView>
+                <SafeAreaView style={styles.container}>
 
-                <Modal
-                    animationType="slide"
-                    transparent={true}
-                    visible={modalVisible}
-                    onRequestClose={() => {
-                        setModalVisible(!modalVisible);
-                    }}
-                >
-                    {/*Tapping this TouchableWithoutFeedback closes the Modal */}
-                    <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
-                        <View style={styles.modalContainer}>
-                            <KeyboardAvoidingView
-                                behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-                                style={{ width: '100%' }}
-                            >
-                                {/*Tapping this TouchableWithoutFeedback closes the keyboard */}
-                                <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
-                                    <View style={styles.modalView}>
-                                        <Text style={styles.label}>Add description</Text>
-                                        <TextInput
-                                            style={styles.input}
-                                            value={description}
-                                            onChangeText={setDescription}
-                                        />
+                    <Modal
+                        animationType="slide"
+                        transparent={true}
+                        visible={modalVisible}
+                        onRequestClose={() => {
+                            setModalVisible(!modalVisible);
+                        }}
+                    >
+                        {/*Tapping this TouchableWithoutFeedback closes the Modal */}
+                        <TouchableWithoutFeedback onPress={() => setModalVisible(false)}>
+                            <View style={styles.modalContainer}>
+                                <KeyboardAvoidingView
+                                    behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+                                    style={{ width: '100%' }}
+                                >
+                                    {/*Tapping this TouchableWithoutFeedback closes the keyboard */}
+                                    <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
+                                        <View style={styles.modalView}>
+                                            <Text style={styles.label}>Add description</Text>
+                                            <TextInput
+                                                style={styles.input}
+                                                value={description}
+                                                onChangeText={setDescription}
+                                            />
 
-                                        <Text style={styles.label}>Add amount</Text>
-                                        <TextInput
-                                            value={amount}
-                                            onChangeText={setAmount}
-                                            keyboardType="numeric"
-                                            style={styles.input}
-                                        />
-                                        <Text style={styles.label}>Add category</Text>
-                                        <TextInput
-                                            value={category}
-                                            onChangeText={setCategory}
-                                            style={styles.input}
-                                        />
+                                            <Text style={styles.label}>Add amount</Text>
+                                            <TextInput
+                                                value={amount}
+                                                onChangeText={setAmount}
+                                                keyboardType="numeric"
+                                                style={styles.input}
+                                            />
+                                            <Text style={styles.label}>Add category</Text>
+                                            <TextInput
+                                                value={category}
+                                                onChangeText={setCategory}
+                                                style={styles.input}
+                                            />
 
-                                        <TouchableOpacity style={styles.addTransactionButton} onPress={() => { handleSave() }}>
-                                            <Text style={styles.addTransactionText}>Add transaction</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </TouchableWithoutFeedback>
-                            </KeyboardAvoidingView>
+                                            <TouchableOpacity style={styles.addTransactionButton} onPress={() => { handleSave() }}>
+                                                <Text style={styles.addTransactionText}>Add transaction</Text>
+                                            </TouchableOpacity>
+                                        </View>
+                                    </TouchableWithoutFeedback>
+                                </KeyboardAvoidingView>
+                            </View>
+                        </TouchableWithoutFeedback>
+                    </Modal>
+
+
+                    <View>
+
+                        <View style={styles.balanceContainer}>
+                            <Text style={styles.label}>Total Balance</Text>
+                            <TextInput
+                                style={styles.balanceInput}
+                                value={balance}
+                                onChangeText={setBalance}
+                                placeholder="Balance"
+                                keyboardType='numeric'
+                                onBlur={() => updateBalance()} //trigers when the user taps outside the input
+                                onSubmitEditing={() => updateBalance()} //trrigers when the users hits "done" on the keyboard
+                            />
                         </View>
-                    </TouchableWithoutFeedback>
-                </Modal>
 
-                <View>
+                        <View style={styles.actionButtonsContainer}>
+                            <TouchableOpacity style={styles.addIncomeButton} onPress={() => {
+                                setModalVisible(true)
+                                setIsExpense(false)
+                            }}>
+                                <Text style={styles.addIncomeText}>Add income</Text>
+                            </TouchableOpacity>
 
-                    <View style={styles.balanceContainer}>
-                        <Text style={styles.label}>Total Balance</Text>
-                        <TextInput
-                            style={styles.balanceInput}
-                            value={balance}
-                            onChangeText={setBalance}
-                            placeholder="Balance"
-                            keyboardType='numeric'
-                            onBlur={() => updateBalance()} //trigers when the user taps outside the input
-                            onSubmitEditing={() => updateBalance()} //trrigers when the users hits "done" on the keyboard
+                            <TouchableOpacity style={styles.addExpenseButton} onPress={() => {
+                                setModalVisible(true)
+                                setIsExpense(true)
+                            }}>
+                                <Text style={styles.addExpenseText}>Add expense</Text>
+                            </TouchableOpacity>
+                        </View>
+
+                        <FlatList
+                            data={transactions}
+                            renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} created_at={formatString(item.created_at)} onEdit={() => { console.log("Edit pressed") }} onDelete={() => handleDelete(item.id, item.is_expense, item.amount)} />)}
+                            keyExtractor={item => item.id.toString()}
                         />
                     </View>
 
-                    <View style={styles.actionButtonsContainer}>
-                        <TouchableOpacity style={styles.addIncomeButton} onPress={() => {
-                            setModalVisible(true)
-                            setIsExpense(false)
-                        }}>
-                            <Text style={styles.addIncomeText}>Add income</Text>
-                        </TouchableOpacity>
-
-                        <TouchableOpacity style={styles.addExpenseButton} onPress={() => {
-                            setModalVisible(true)
-                            setIsExpense(true)
-                        }}>
-                            <Text style={styles.addExpenseText}>Add expense</Text>
-                        </TouchableOpacity>
-                    </View>
-
-                    <FlatList
-                        data={transactions}
-                        renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} created_at={formatString(item.created_at)} />)}
-                        keyExtractor={item => item.id.toString()}
-                    />
-                </View>
-            </SafeAreaView>
+                </SafeAreaView>
+            </GestureHandlerRootView>
         </TouchableWithoutFeedback>
+
     )
 }
 
@@ -398,4 +451,14 @@ const styles = StyleSheet.create({
         textTransform: 'uppercase',
         color: '#888'
     },
+
+    swipeButton: {
+
+        justifyContent: 'center',
+        alignItems: 'center',
+        width: 75,
+        height: '100%',
+        borderRadius: 12,
+        marginLeft: 10
+    }
 })

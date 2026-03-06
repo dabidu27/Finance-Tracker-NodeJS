@@ -47,6 +47,7 @@ const formatString = (createdAt: string) => {
 
 //we use this function above in the Transaction component we defined, so the handleDelete and handleEdit functions can be passed
 //through the list of arguments of that component (function)
+//this function defines what is shown when we swipe the card
 const renderRightActions = (onEdit: () => void, onDelete: () => void) => {
 
     return (
@@ -142,6 +143,7 @@ export default function DashboardScreen() {
 
             //when we pass an arrow function the a set function like this, react goes into its internal memory and gets the 100% guaranteed most up to date data
             //prevTransactions is the array that holds that value grabbed by react (it could have been named anything)
+            //or we could have called fetchTransactions() because that updates the transactions array with the newest data from the db
             setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id));
             console.log('Successfully delete transaction');
 
