@@ -1,19 +1,22 @@
 import { SafeAreaView, View, Text, StyleSheet, FlatList, TouchableOpacity } from "react-native";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from 'axios';
 import * as SecureStorage from 'expo-secure-store';
 import { Swipeable, GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Ionicons } from "@expo/vector-icons";
+import { useFocusEffect } from "expo-router";
 
 //with type TransactionRecord, we define a type so react knows what kind of elements to expect in the transaction array
 type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean, created_at: string };
 //with TransactionProps, we define a type used in the mini component we will define
+//when we tell the component we will recive those parameters (because we can see the componenet is written like a function), when we enforce the type :TransactionProps, it forces us to pass all that we need
 type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean, created_at: string, onEdit: () => void, onDelete: () => void };
 
 //this is a custom mini component we define
 //every transaction will look like  this after we map with renderItem in the flatList
 const Transaction = ({ description, amount, category, is_expense, created_at, onEdit, onDelete }: TransactionProps) => (
 
+    //to make the cards swipeable, wrap them in a Swipeable
     <Swipeable renderRightActions={() => renderRightActions(onEdit, onDelete)}>
         <View style={styles.card}>
             {/*We use 2 views to have description and amount on the left on the card, one below the other
@@ -37,6 +40,13 @@ const formatString = (createdAt: string) => {
     return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
 }
 
+//this is a function that we define for the Swipeable component
+//it takes as parameters 2 functions, onEdit and onDelete, that it uses at the onPress
+//we cannot directly pass handleDelete and handleDelete because they are written inside the screen function,
+//and this function is outside
+
+//we use this function above in the Transaction component we defined, so the handleDelete and handleEdit functions can be passed
+//through the list of arguments of that component (function)
 const renderRightActions = (onEdit: () => void, onDelete: () => void) => {
 
     return (
@@ -78,18 +88,91 @@ export default function DashboardScreen() {
         }
     }
 
+    const fetchBalance = async () => {
+
+        try {
+            const baseUrl = "http://192.168.1.105:8080/api/transactions";
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.get(`${baseUrl}/balance`, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            console.log("Successfully fetched balance");
+            const balance = response.data.balance;
+            return balance
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const updateBalance = async (balance: Number) => {
+
+        try {
+
+            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.post(`${baseUrl}/balance`, { balance: balance }, {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
+
+            console.log("Successfully updated balance");
+        } catch (error) {
+            console.error(error);
+        }
+    }
+
+    const handleDelete = async (id: string, is_expense: boolean, amount: string) => {
+
+        try {
+            const baseUrl = 'http://192.168.1.105:8080/api/transactions';
+            const token = await SecureStorage.getItemAsync('token');
+
+            const response = await axios.delete(`${baseUrl}/${id}`, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            //the api call returns only the transaction that was delete, so we cannot setTransactions(response.data)
+            //what we do is we set transactions to be all transactions besides the one we just deleted (by filtering out the one
+            //that has the id as the one we just deleted)
+            //we do this because we need to update the screen immediately
+
+            //when we pass an arrow function the a set function like this, react goes into its internal memory and gets the 100% guaranteed most up to date data
+            //prevTransactions is the array that holds that value grabbed by react (it could have been named anything)
+            setTransactions((prevTransactions) => prevTransactions.filter((transaction) => transaction.id !== id));
+            console.log('Successfully delete transaction');
+
+            const balance = await fetchBalance();
+            const newBalance = is_expense ? Number(balance) + Number(amount) : Number(balance) - Number(amount);
+            await updateBalance(newBalance);
+            console.log('Successfully updated balance');
+        } catch (error: any) {
+            console.error("Failed to delete transaction:", error.response?.data || error.message);
+        }
+
+    }
 
     //useEffect is used for running background tasks
     //imediatelly after the screen is drawn, use effect runs and fetchTransactions() is called
     //after the data arrives, the screen is redrawn
     //we use the empty array at the end [] to specify that the operation should only be done once
     //if we had [userId], it meant do this every time userId changes
-    useEffect(() => {
-        fetchTransactions();
-    }, []);
+    // useEffect(() => {
+    //     fetchTransactions();
+    // }, []);
+
+    useFocusEffect(
+        useCallback(() => {
+            fetchTransactions()
+        }, [])
+    );
 
     return (
         <GestureHandlerRootView style={{ flex: 1 }}>
+            {/*We need GestureHandlerRootView to make the Swipeable work */}
             <SafeAreaView style={styles.container}>
                 {/*we use flat list to draw a list from the array of transactions 
             data = {transactions} => look at the transactions array
@@ -102,8 +185,9 @@ export default function DashboardScreen() {
                     data={transactions}
                     //notice that the function after => is with () (not {}) and has no return
                     //this means instantly run what is inside
-                    renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} created_at={item.created_at} onEdit={() => { console.log('Edit button clicked') }} onDelete={() => { console.log("Delete button clicked") }} />)}
                     keyExtractor={item => item.id}
+                    renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} created_at={item.created_at} onEdit={() => { console.log('Edit button clicked') }} onDelete={() => handleDelete(item.id, item.is_expense, item.amount)} />)} //keyExtractor got the id; also, see that here we pass the handleDelete and handleEdit functions
+
                 />
             </SafeAreaView>
         </GestureHandlerRootView>

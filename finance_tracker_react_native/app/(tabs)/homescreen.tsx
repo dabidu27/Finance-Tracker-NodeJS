@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Text, SafeAreaView, StyleSheet, View, TextInput, SafeAreaViewBase, FlatList, TouchableWithoutFeedback, Keyboard, TouchableOpacity, Modal, KeyboardAvoidingView, Platform } from "react-native";
 import * as SecureStorage from 'expo-secure-store';
 import axios from 'axios';
+import { useFocusEffect } from "expo-router";
 
 
 type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean, created_at: string };
@@ -128,11 +129,21 @@ export default function HomeScreen() {
 
     }
 
-    useEffect(() => {
-        fetchBalance();
-        fetchTransactions();
-    }, [])
+    // useEffect(() => {
+    //     fetchBalance();
+    //     fetchTransactions();
+    // }, [])
 
+    //replace useEffect with useFocusEffect, that runs the functions everytime the HomeScreen tab is opened
+    //useEffect only fetches once per app openning
+    //we need this because we can delete and edit transactions from the dashboard, where we do indeed setTransactions, but it only affects the transactions from the dashboard
+    //and we cannot do setBalance there
+    useFocusEffect(
+        useCallback(() => {
+            fetchBalance();
+            fetchTransactions();
+        }, [])
+    )
     return (
         <TouchableWithoutFeedback onPress={Keyboard.dismiss}>
             <SafeAreaView style={styles.container}>
