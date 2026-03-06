@@ -4,18 +4,32 @@ import * as SecureStorage from 'expo-secure-store';
 import axios from 'axios';
 
 
-type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean };
-type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean };
-const Transaction = ({ description, amount, category, is_expense }: TransactionProps) => (
+type TransactionRecord = { id: string, description: string, amount: string, category: string, is_expense: boolean, created_at: string };
+type TransactionProps = { description: string, amount: string, category: string, is_expense: boolean, created_at: string };
+const Transaction = ({ description, amount, category, is_expense, created_at }: TransactionProps) => (
 
     <View style={styles.card}>
-        <View style={styles.leftColumn}>
+        <View style={styles.column}>
             <Text style={styles.descriptionText}>{description}</Text>
             <Text style={[styles.amountText, { color: is_expense ? '#ff0000' : '#2ecc71' }]}>{amount}</Text>
         </View>
-        <Text style={styles.categoryText}>{category}</Text>
+        <View style={styles.column}>
+            <Text style={styles.categoryText}>{category}</Text>
+            <Text style={styles.categoryText}>{created_at}</Text>
+        </View>
+
     </View>
 )
+
+const formatString = (dateString: string) => {
+
+    if (!dateString) {
+        return '';
+    }
+
+    const date = new Date(dateString);
+    return date.toLocaleString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+}
 export default function HomeScreen() {
 
     const [balance, setBalance] = useState('');
@@ -205,7 +219,7 @@ export default function HomeScreen() {
 
                     <FlatList
                         data={transactions}
-                        renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} />)}
+                        renderItem={({ item }) => (<Transaction description={item.description} amount={item.amount} category={item.category} is_expense={item.is_expense} created_at={formatString(item.created_at)} />)}
                         keyExtractor={item => item.id.toString()}
                     />
                 </View>
@@ -237,7 +251,7 @@ const styles = StyleSheet.create({
         shadowRadius: 4,
         elevation: 2
     },
-    leftColumn: {
+    column: {
         flexDirection: 'column',
     },
 
