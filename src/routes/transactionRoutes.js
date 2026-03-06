@@ -8,7 +8,7 @@ router.get('/', getCurrentUser, getTransactions); //when the base url is hit wit
 router.post('/', getCurrentUser, addTransaction); //when the base url is hit with a post request, the getCurrentUser function runs, we get the userId to the request (to req.user), and then the addTransaction callback function runs
 router.put('/:id', getCurrentUser, editTransaction);
 router.delete('/:id', getCurrentUser, deleteTransaction);
-router.delete('/', getCurrentUser, deleteTransaction);
+router.delete('/', getCurrentUser, deleteAllTransactions);
 router.post('/balance', getCurrentUser, modifyBalance);
 router.get('/balance', getCurrentUser, getBalance);
 

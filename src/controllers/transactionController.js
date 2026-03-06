@@ -1,10 +1,11 @@
+import { response } from 'express';
 import { pool } from '../db.js';
 
 export const getTransactions = async (req, res) => {
 
     try {
         const userId = req.user.id; //getCurrentUser middleware attaches userId to the request
-        const query = 'SELECT * from transactions where user_id = $1 order by id desc'; //add ownership later, after adding JWT auth
+        const query = 'SELECT * from transactions where user_id = $1 order by id desc';
         const result = await pool.query(query, [userId]);
         res.status(200).json(result.rows);
     } catch (error) {
@@ -129,9 +130,12 @@ export const deleteAllTransactions = async (req, res) => {
         const query = 'delete from transactions where user_id = $1 returning *';
 
         const result = await pool.query(query, [userId]);
-        if (response.rows.length === 0) {
+        if (result.rows.length === 0) {
             return res.status(404).json('No transactions for the user');
         }
+
+        const queryBalance = 'update users set balance = 0 where id = $1';
+        await pool.query(queryBalance, [userId]);
 
         res.status(200).json(result.rows[0]);
     } catch (error) {
